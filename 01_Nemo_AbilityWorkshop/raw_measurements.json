@@ -1,0 +1,259 @@
+{
+  "device_info": {
+    "model": "Xiaomi 14 Pro (FHD+)",
+    "scale": 2.625,
+    "scale_source": "device_db",
+    "image_size_px": {
+      "w": 1080,
+      "h": 2400
+    },
+    "logical_size_pt": {
+      "w": 411,
+      "h": 914
+    }
+  },
+  "analysis_params": {
+    "color_quant": 4,
+    "color_match": 6,
+    "bg_diff_thresh": 10,
+    "min_gap_px": 6,
+    "kernel_params_light": {
+      "kernel_w_px": 53,
+      "kernel_h_px": 3
+    },
+    "kernel_params_dark": {
+      "kernel_w_px": 53,
+      "kernel_h_px": 3
+    }
+  },
+  "light_mode_samples": {
+    "background_hex": "#F7F8FA",
+    "candidate_surface": {
+      "color": [
+        232,
+        242,
+        243
+      ],
+      "color_hex": "#E8F2F3",
+      "area_ratio": 0.3805,
+      "confidence": "low"
+    }
+  },
+  "dark_mode_samples": {
+    "background_hex": "#1A1A1A",
+    "candidate_surface": {
+      "color": [
+        45,
+        35,
+        23
+      ],
+      "color_hex": "#2D2317",
+      "area_ratio": 0.1306,
+      "confidence": "medium"
+    }
+  },
+  "measured_metrics_pt": {
+    "screen_horizontal_margin_pt": 16.0,
+    "card_vertical_gap_pt": 16.0,
+    "traditional_card_radius_pt": 23.9,
+    "compensated_card_radius_pt": 28.2,
+    "superellipse_curvature": {
+      "shape_exponent_n": 2.05,
+      "radius_a_pt": 24.8,
+      "radius_b_pt": 24.7,
+      "curve_style": "circular_standard",
+      "exact_formula": "|x / 24.8|^2.05 + |y / 24.7|^2.05 = 1",
+      "figma_corner_smoothing": 0.0
+    },
+    "margin_consensus": "valid",
+    "gap_consensus": "valid"
+  },
+  "per_mode_details": {
+    "light": {
+      "margin": {
+        "margin_pt": 16.0,
+        "left_edge_px": 42.0,
+        "right_edge_px": 1037.0
+      },
+      "gap": {
+        "gap_pt": 16.0,
+        "card_bounds_px": [
+          {
+            "y_start": 326,
+            "y_end": 566
+          },
+          {
+            "y_start": 609,
+            "y_end": 850
+          },
+          {
+            "y_start": 892,
+            "y_end": 1123
+          },
+          {
+            "y_start": 1165,
+            "y_end": 1396
+          },
+          {
+            "y_start": 1438,
+            "y_end": 1669
+          },
+          {
+            "y_start": 1767,
+            "y_end": 1888
+          },
+          {
+            "y_start": 1984,
+            "y_end": 2112
+          }
+        ],
+        "gap_ranges_px": [
+          {
+            "y_start": 288,
+            "y_end": 326,
+            "height_px": 38
+          },
+          {
+            "y_start": 566,
+            "y_end": 609,
+            "height_px": 43
+          },
+          {
+            "y_start": 850,
+            "y_end": 892,
+            "height_px": 42
+          },
+          {
+            "y_start": 1123,
+            "y_end": 1165,
+            "height_px": 42
+          },
+          {
+            "y_start": 1396,
+            "y_end": 1438,
+            "height_px": 42
+          },
+          {
+            "y_start": 1669,
+            "y_end": 1767,
+            "height_px": 98
+          },
+          {
+            "y_start": 1888,
+            "y_end": 1984,
+            "height_px": 96
+          }
+        ]
+      },
+      "radius": {
+        "traditional_circle": {
+          "radius_pt": 23.9,
+          "compensated_radius_pt": 28.2
+        },
+        "superellipse": {
+          "shape_exponent_n": 2.05,
+          "radius_a_pt": 24.8,
+          "radius_b_pt": 24.7,
+          "curve_style": "circular_standard",
+          "exact_formula": "|x / 24.8|^2.05 + |y / 24.7|^2.05 = 1",
+          "figma_corner_smoothing": 0.0
+        },
+        "is_subtle_tint": true,
+        "confidence": "high"
+      }
+    },
+    "dark": {
+      "margin": {
+        "margin_pt": 16.0,
+        "left_edge_px": 42.0,
+        "right_edge_px": 1037.0
+      },
+      "gap": {
+        "gap_pt": 16.0,
+        "card_bounds_px": [
+          {
+            "y_start": 326,
+            "y_end": 567
+          },
+          {
+            "y_start": 609,
+            "y_end": 850
+          },
+          {
+            "y_start": 892,
+            "y_end": 1123
+          },
+          {
+            "y_start": 1165,
+            "y_end": 1396
+          },
+          {
+            "y_start": 1438,
+            "y_end": 1669
+          },
+          {
+            "y_start": 1711,
+            "y_end": 1942
+          },
+          {
+            "y_start": 1984,
+            "y_end": 2112
+          }
+        ],
+        "gap_ranges_px": [
+          {
+            "y_start": 288,
+            "y_end": 326,
+            "height_px": 38
+          },
+          {
+            "y_start": 567,
+            "y_end": 609,
+            "height_px": 42
+          },
+          {
+            "y_start": 850,
+            "y_end": 892,
+            "height_px": 42
+          },
+          {
+            "y_start": 1123,
+            "y_end": 1165,
+            "height_px": 42
+          },
+          {
+            "y_start": 1396,
+            "y_end": 1438,
+            "height_px": 42
+          },
+          {
+            "y_start": 1669,
+            "y_end": 1711,
+            "height_px": 42
+          },
+          {
+            "y_start": 1942,
+            "y_end": 1984,
+            "height_px": 42
+          }
+        ]
+      },
+      "radius": {
+        "traditional_circle": {
+          "radius_pt": 23.7,
+          "compensated_radius_pt": 28.0
+        },
+        "superellipse": {
+          "shape_exponent_n": 1.95,
+          "radius_a_pt": 23.2,
+          "radius_b_pt": 23.3,
+          "curve_style": "circular_standard",
+          "exact_formula": "|x / 23.2|^1.95 + |y / 23.3|^1.95 = 1",
+          "figma_corner_smoothing": 0.0
+        },
+        "is_subtle_tint": true,
+        "confidence": "high"
+      }
+    }
+  }
+}

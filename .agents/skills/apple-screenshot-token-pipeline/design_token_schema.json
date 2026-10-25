@@ -1,0 +1,134 @@
+{
+  "view_identity": {
+    "app_name": "App 英文名称",
+    "view_name": "具体视图名称（如 Inset Grouped List / Card Grid）",
+    "theme_mode": "light 或 dark",
+    "device": {
+      "model": "设备型号（来自脚本检测）",
+      "scale_factor": 3,
+      "image_size_px": { "w": 1179, "h": 2556 },
+      "logical_size_pt": { "w": 393, "h": 852 }
+    }
+  },
+
+  "geometry": {
+    "curve_type": "continuous 或 circular（苹果绝大多数为 continuous Squircle）",
+    "container_card_radius_pt": "大卡片外圆角传统标称半径数值，如 10 / 16 / 20 / 24",
+    "superellipse": {
+      "shape_exponent_n": "超椭圆指数 n（如 2.0 标准圆 / 3.0 小米超椭圆 / 3.82 苹果连续Squircle，无则 null）",
+      "exact_formula": "推导的闭式数学方程字符串（如 '|x/24.8|^2.05 + |y/24.7|^2.05 = 1'，无则 null）",
+      "curve_style": "circular_standard / superellipse_hyperos / continuous_apple_squircle / unobserved",
+      "figma_corner_smoothing": "等效 Figma 平滑系数 (0.0 ~ 1.0)，无则 null"
+    },
+    "inner_item_radius_pt": "卡片内嵌套小元素圆角数值（须满足 r_inner = r_outer - padding），无则 null",
+    "capsule_radius_pt": "胶囊按钮圆角数值或 'full_height'，无则 null",
+    "modal_sheet_radius_pt": "底部弹窗 Sheet 顶部圆角数值，无则 null",
+    "_notes": "补充说明（如同心圆角验证结果、微光边缘抗锯齿补偿说明）"
+  },
+
+  "spacing": {
+    "grid_base_pt": 8,
+    "screen_edge_margin_pt": "屏幕左右外边距数值（优先采纳脚本测量值）",
+    "card_vertical_gap_pt": "卡片间垂直间距数值（优先采纳脚本测量值）",
+    "card_interior_padding": {
+      "top_pt": "卡片上内边距",
+      "bottom_pt": "卡片下内边距",
+      "left_pt": "卡片左内边距",
+      "right_pt": "卡片右内边距"
+    },
+    "vertical_gaps": {
+      "nav_title_to_content_pt": "导航栏/大标题到首个内容块的垂直间距",
+      "section_to_section_pt": "相邻 Section 之间的垂直留白",
+      "row_min_height_pt": "分组列表内单行最小高度（如 44 / 52）",
+      "icon_to_text_pt": "图标到主文字的水平间距",
+      "title_to_subtitle_pt": "主标题到副标题的垂直微间距"
+    },
+    "_notes": "补充说明（如脚本原始测量值 vs 校准后标称值）"
+  },
+
+  "typography": {
+    "font_family": "SF Pro / SF Pro Display / SF Pro Rounded",
+    "observed_styles": [
+      {
+        "element": "该文本在界面中的角色描述（如 '顶部导航大标题'）",
+        "mapped_style": "映射到的 SF Pro 官方字阶名（如 Large Title / Body / Caption 1）",
+        "size_pt": "字号数值",
+        "weight": "字重（如 Bold / Semibold / Regular）",
+        "tracking_pt": "字间距数值（正值舒展/负值紧凑），无法确定则 null",
+        "line_height_pt": "行高数值，无法确定则 null"
+      }
+    ],
+    "text_opacity_hierarchy": {
+      "primary": "主文字不透明度（通常 1.0 / 100%）",
+      "secondary": "副标题/描述文字不透明度（通常 ~0.6）",
+      "tertiary": "占位符/禁用文字不透明度（通常 ~0.3）",
+      "quaternary": "最弱水印文字不透明度（通常 ~0.18）"
+    }
+  },
+
+  "colors": {
+    "background_hierarchy": {
+      "system_background": "最底层背景色 Hex（优先采纳脚本测量值）",
+      "secondary_background": "第二层表面色 Hex（如卡片底色，参考脚本 candidate_surface）",
+      "tertiary_background": "卡片内次级容器底色 Hex，无则 null"
+    },
+    "text_colors": {
+      "label_primary": "主文字 Hex",
+      "label_secondary": "副标题文字 Hex",
+      "label_tertiary": "占位符文字 Hex，无则 null",
+      "label_quaternary": "最弱文字 Hex，无则 null"
+    },
+    "accent_tint": "主交互强调色 Hex（如浅色 #007AFF / 深色 #0A84FF）",
+    "tint_alpha_blend": {
+      "exists": false,
+      "base_color_hex": "微光混合基色 Hex，无则 null",
+      "alpha_light": "浅色模式透明度比例（如 0.06），无则 null",
+      "alpha_dark": "深色模式透明度比例（如 0.10），无则 null"
+    },
+    "other_semantic_colors": {
+      "destructive": "删除/警告色 Hex，未观测则 null",
+      "success": "成功色 Hex，未观测则 null"
+    }
+  },
+
+  "materials_and_effects": {
+    "blur_material": "毛玻璃材质类型（UltraThinMaterial / ThinMaterial / RegularMaterial / none）",
+    "hairline_border": {
+      "exists": true,
+      "width_pt": "发丝线宽度（如 0.33 / 0.5）",
+      "color_hex": "发丝线颜色 Hex",
+      "opacity": "不透明度（如 0.1 / 0.29）"
+    },
+    "drop_shadow": "投影参数对象（苹果原生极少用硬投影，通常为 'none'）",
+    "separator": {
+      "exists": true,
+      "color_hex": "列表分隔线颜色 Hex",
+      "opacity": "不透明度",
+      "inset_left_pt": "分隔线左侧缩进值"
+    }
+  },
+
+  "iconography": {
+    "icon_library": "SF Symbols 或 custom 或 unobserved",
+    "rendering_mode": "monochrome / hierarchical / multicolor / unobserved",
+    "observed_icons": [
+      {
+        "description": "图标描述（如 '右侧展开箭头'）",
+        "sf_symbol_name": "推测的 SF Symbol 名称（如 chevron.right），不确定则 null",
+        "size_pt": "图标视觉尺寸，不确定则 null",
+        "color_treatment": "颜色处理（如 secondary_text / accent_tint）"
+      }
+    ]
+  },
+
+  "script_measurements": {
+    "source_file": "raw_measurements.json",
+    "background_hex_measured": "脚本实测的背景色 Hex",
+    "candidate_surface_hex_measured": "脚本实测的候选表面色 Hex",
+    "candidate_surface_confidence": "脚本给出的置信度（high / medium / low）",
+    "screen_margin_pt_measured": "脚本实测的屏幕外边距 pt",
+    "card_gap_pt_measured": "脚本实测的卡片垂直间距 pt",
+    "traditional_card_radius_pt_measured": "脚本实测的传统圆角标称半径 pt",
+    "superellipse_exponent_measured": "脚本实测的超椭圆形状指数 n"
+  }
+}
