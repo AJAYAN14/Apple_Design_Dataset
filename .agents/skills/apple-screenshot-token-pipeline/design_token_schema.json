@@ -2,6 +2,7 @@
   "view_identity": {
     "app_name": "App 英文名称",
     "view_name": "具体视图名称（如 Inset Grouped List / Card Grid）",
+    "design_system_family": "apple_hig / google_material3 / xiaomi_hyperos / fluent / custom",
     "theme_mode": "light 或 dark",
     "device": {
       "model": "设备型号（来自脚本检测）",
@@ -109,12 +110,12 @@
   },
 
   "iconography": {
-    "icon_library": "SF Symbols 或 custom 或 unobserved",
+    "icon_library": "SF Symbols / Material Symbols / Plump Duo / custom / unobserved",
     "rendering_mode": "monochrome / hierarchical / multicolor / unobserved",
     "observed_icons": [
       {
         "description": "图标描述（如 '右侧展开箭头'）",
-        "sf_symbol_name": "推测的 SF Symbol 名称（如 chevron.right），不确定则 null",
+        "sf_symbol_name": "推测的图标名称（如 chevron.right / arrow_forward_ios），不确定则 null",
         "size_pt": "图标视觉尺寸，不确定则 null",
         "color_treatment": "颜色处理（如 secondary_text / accent_tint）"
       }
@@ -128,6 +129,8 @@
     "candidate_surface_confidence": "脚本给出的置信度（high / medium / low）",
     "screen_margin_pt_measured": "脚本实测的屏幕外边距 pt",
     "card_gap_pt_measured": "脚本实测的卡片垂直间距 pt",
+    "section_gap_pt_measured": "脚本实测的跨 Section 宏观留白 pt，无则 null",
+    "separator_inset_left_pt_measured": "脚本实测的列表分隔线左缩进 pt，无则 null",
     "traditional_card_radius_pt_measured": "脚本实测的传统圆角标称半径 pt",
     "superellipse_exponent_measured": "脚本实测的超椭圆形状指数 n"
   }

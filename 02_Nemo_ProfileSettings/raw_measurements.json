@@ -55,14 +55,16 @@
   "measured_metrics_pt": {
     "screen_horizontal_margin_pt": 16.5,
     "card_vertical_gap_pt": 10.5,
-    "traditional_card_radius_pt": 17.2,
-    "compensated_card_radius_pt": 20.3,
+    "section_vertical_gap_pt": 36.0,
+    "separator_inset_left_pt": 73.6,
+    "traditional_card_radius_pt": 22.0,
+    "compensated_card_radius_pt": 26.0,
     "superellipse_curvature": {
       "shape_exponent_n": 1.8,
-      "radius_a_pt": 16.0,
-      "radius_b_pt": 21.7,
+      "radius_a_pt": 22.4,
+      "radius_b_pt": 30.8,
       "curve_style": "circular_standard",
-      "exact_formula": "|x / 16.0|^1.8 + |y / 21.7|^1.8 = 1",
+      "exact_formula": "|x / 22.4|^1.8 + |y / 30.8|^1.8 = 1",
       "figma_corner_smoothing": 0.0
     },
     "margin_consensus": "valid",
@@ -77,7 +79,38 @@
       },
       "gap": {
         "gap_pt": 11.0,
+        "section_gap_pt": 36.6,
         "card_bounds_px": [
+          {
+            "y_start": 288,
+            "y_end": 356
+          },
+          {
+            "y_start": 452,
+            "y_end": 492
+          },
+          {
+            "y_start": 523,
+            "y_end": 1041
+          },
+          {
+            "y_start": 1137,
+            "y_end": 1177
+          },
+          {
+            "y_start": 1208,
+            "y_end": 1551
+          },
+          {
+            "y_start": 1650,
+            "y_end": 1687
+          },
+          {
+            "y_start": 1718,
+            "y_end": 2061
+          }
+        ],
+        "raw_card_bounds_px": [
           {
             "y_start": 288,
             "y_end": 356
@@ -147,19 +180,24 @@
       },
       "radius": {
         "traditional_circle": {
-          "radius_pt": 17.2,
-          "compensated_radius_pt": 20.3
+          "radius_pt": 22.0,
+          "compensated_radius_pt": 26.0
         },
         "superellipse": {
           "shape_exponent_n": 1.8,
-          "radius_a_pt": 16.0,
-          "radius_b_pt": 21.7,
+          "radius_a_pt": 22.4,
+          "radius_b_pt": 30.8,
           "curve_style": "circular_standard",
-          "exact_formula": "|x / 16.0|^1.8 + |y / 21.7|^1.8 = 1",
+          "exact_formula": "|x / 22.4|^1.8 + |y / 30.8|^1.8 = 1",
           "figma_corner_smoothing": 0.0
         },
         "is_subtle_tint": true,
         "confidence": "high"
+      },
+      "separator": {
+        "inset_left_pt": 73.3,
+        "confidence": "high",
+        "detected_lines": 16
       }
     },
     "dark": {
@@ -170,7 +208,38 @@
       },
       "gap": {
         "gap_pt": 10.0,
+        "section_gap_pt": 35.4,
         "card_bounds_px": [
+          {
+            "y_start": 288,
+            "y_end": 359
+          },
+          {
+            "y_start": 452,
+            "y_end": 492
+          },
+          {
+            "y_start": 520,
+            "y_end": 1044
+          },
+          {
+            "y_start": 1137,
+            "y_end": 1177
+          },
+          {
+            "y_start": 1205,
+            "y_end": 1554
+          },
+          {
+            "y_start": 1650,
+            "y_end": 1687
+          },
+          {
+            "y_start": 1715,
+            "y_end": 2064
+          }
+        ],
+        "raw_card_bounds_px": [
           {
             "y_start": 288,
             "y_end": 359
@@ -240,19 +309,24 @@
       },
       "radius": {
         "traditional_circle": {
-          "radius_pt": 18.1,
-          "compensated_radius_pt": 21.4
+          "radius_pt": 23.0,
+          "compensated_radius_pt": 27.1
         },
         "superellipse": {
           "shape_exponent_n": 1.8,
-          "radius_a_pt": 20.9,
-          "radius_b_pt": 21.0,
+          "radius_a_pt": 22.3,
+          "radius_b_pt": 35.1,
           "curve_style": "circular_standard",
-          "exact_formula": "|x / 20.9|^1.8 + |y / 21.0|^1.8 = 1",
+          "exact_formula": "|x / 22.3|^1.8 + |y / 35.1|^1.8 = 1",
           "figma_corner_smoothing": 0.0
         },
         "is_subtle_tint": true,
         "confidence": "high"
+      },
+      "separator": {
+        "inset_left_pt": 73.9,
+        "confidence": "high",
+        "detected_lines": 16
       }
     }
   }

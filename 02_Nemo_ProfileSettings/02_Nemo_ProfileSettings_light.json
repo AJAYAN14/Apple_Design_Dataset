@@ -2,6 +2,7 @@
   "view_identity": {
     "app_name": "Nemo",
     "view_name": "ProfileSettings",
+    "design_system_family": "custom",
     "theme_mode": "light",
     "device": {
       "model": "Xiaomi 14 Pro (FHD+)",
@@ -18,17 +19,17 @@
   },
   "geometry": {
     "curve_type": "circular",
-    "container_card_radius_pt": 20.0,
+    "container_card_radius_pt": 24.0,
     "superellipse": {
       "shape_exponent_n": 1.8,
-      "exact_formula": "|x / 16.0|^1.8 + |y / 21.7|^1.8 = 1",
+      "exact_formula": "|x / 22.4|^1.8 + |y / 30.8|^1.8 = 1",
       "curve_style": "circular_standard",
       "figma_corner_smoothing": 0.0
     },
     "inner_item_radius_pt": null,
     "capsule_radius_pt": 20.0,
     "modal_sheet_radius_pt": null,
-    "_notes": "卡片外圆角实测标称值为 17.2pt，因微光抗锯齿收缩补偿建议为 20.3pt，归整为 8pt 栅格系统标准 20pt；底部导航激活胶囊圆角半径为 20pt"
+    "_notes": "卡片外圆角实测标称值为 22.0pt，微光抗锯齿收缩补偿建议为 26.0pt，精准对齐设计系统与组件规范标准 24pt (RoundedCornerShape(24.dp))；底部导航激活胶囊圆角半径为 20pt"
   },
   "spacing": {
     "grid_base_pt": 8,
@@ -42,12 +43,12 @@
     },
     "vertical_gaps": {
       "nav_title_to_content_pt": null,
-      "section_to_section_pt": 16.0,
+      "section_to_section_pt": 36.0,
       "row_min_height_pt": 64.0,
       "icon_to_text_pt": 16.0,
       "title_to_subtitle_pt": 4.0
     },
-    "_notes": "屏幕外边距实测 Light 17.0pt / Dark 16.0pt，共识值 16.5pt；卡片垂直留白实测 10.5pt；列表单项最小高度 64pt"
+    "_notes": "屏幕外边距实测 Light 17.0pt / Dark 16.0pt，共识值 16.5pt；卡片内部分隔微隙 10.5pt；跨 Section 宏观留白实测 36.0pt；列表单项最小高度 64pt"
   },
   "typography": {
     "font_family": "SF Pro Rounded",
@@ -129,11 +130,11 @@
       "exists": true,
       "color_hex": "#E5E5EA",
       "opacity": 0.6,
-      "inset_left_pt": 56.0
+      "inset_left_pt": 73.6
     }
   },
   "iconography": {
-    "icon_library": "SF Symbols",
+    "icon_library": "Plump Duo",
     "rendering_mode": "multicolor",
     "observed_icons": [
       {
@@ -187,7 +188,9 @@
     "candidate_surface_confidence": "low",
     "screen_margin_pt_measured": 16.5,
     "card_gap_pt_measured": 10.5,
-    "traditional_card_radius_pt_measured": 17.2,
+    "section_gap_pt_measured": 36.0,
+    "separator_inset_left_pt_measured": 73.6,
+    "traditional_card_radius_pt_measured": 22.0,
     "superellipse_exponent_measured": 1.8
   }
 }

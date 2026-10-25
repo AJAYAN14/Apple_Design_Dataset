@@ -193,6 +193,8 @@ def validate_single_token_schema(data: dict, expected_mode: str, filename: str) 
     check_hex(sm.get("candidate_surface_hex_measured"), f"{prefix}.script_measurements.candidate_surface_hex_measured", errors, allow_null=True)
     check_num(sm.get("screen_margin_pt_measured"), f"{prefix}.script_measurements.screen_margin_pt_measured", errors, allow_null=True)
     check_num(sm.get("card_gap_pt_measured"), f"{prefix}.script_measurements.card_gap_pt_measured", errors, allow_null=True)
+    check_num(sm.get("section_gap_pt_measured"), f"{prefix}.script_measurements.section_gap_pt_measured", errors, allow_null=True)
+    check_num(sm.get("separator_inset_left_pt_measured"), f"{prefix}.script_measurements.separator_inset_left_pt_measured", errors, allow_null=True)
     check_num(sm.get("traditional_card_radius_pt_measured"), f"{prefix}.script_measurements.traditional_card_radius_pt_measured", errors, allow_null=True)
     check_num(sm.get("superellipse_exponent_measured"), f"{prefix}.script_measurements.superellipse_exponent_measured", errors, allow_null=True)
 
@@ -268,6 +270,13 @@ def validate_pair_symmetry(light: dict, dark: dict) -> Tuple[List[str], List[str
                 if ls.get(check_k) != ds.get(check_k):
                     errors.append(f"[对称性校验 - 字体样式] style[{i}].{check_k} 不一致: light={ls.get(check_k)}, dark={ds.get(check_k)}")
 
+    # 5. 材质中的几何尺寸一致性 (如分隔线左缩进)
+    l_sep = light.get("materials_and_effects", {}).get("separator", {})
+    d_sep = dark.get("materials_and_effects", {}).get("separator", {})
+    if l_sep.get("exists") and d_sep.get("exists"):
+        if l_sep.get("inset_left_pt") != d_sep.get("inset_left_pt"):
+            errors.append(f"[对称性校验 - 分隔线] separator.inset_left_pt 不相等: light={l_sep.get('inset_left_pt')}, dark={d_sep.get('inset_left_pt')}")
+
     return errors, warnings_list
 
 
@@ -281,8 +290,12 @@ def validate_ground_truth(light: dict, dark: dict, raw: dict) -> Tuple[List[str]
 
     raw_l_bg = raw.get("light_mode_samples", {}).get("background_hex")
     raw_d_bg = raw.get("dark_mode_samples", {}).get("background_hex")
-    raw_margin = raw.get("measured_metrics_pt", {}).get("screen_horizontal_margin_pt")
-    raw_gap = raw.get("measured_metrics_pt", {}).get("card_vertical_gap_pt")
+    raw_metrics = raw.get("measured_metrics_pt", {})
+    raw_margin = raw_metrics.get("screen_horizontal_margin_pt")
+    raw_gap = raw_metrics.get("card_vertical_gap_pt")
+    raw_section_gap = raw_metrics.get("section_vertical_gap_pt")
+    raw_sep_inset = raw_metrics.get("separator_inset_left_pt")
+    raw_radius = raw_metrics.get("traditional_card_radius_pt")
 
     # 对照 background_hex_measured
     if l_sm.get("background_hex_measured") != raw_l_bg:
@@ -303,6 +316,27 @@ def validate_ground_truth(light: dict, dark: dict, raw: dict) -> Tuple[List[str]
             errors.append(f"[地面真值] light.json 中的 card_gap_pt_measured ({l_sm.get('card_gap_pt_measured')}) 与 raw ({raw_gap}) 不符")
         if d_sm.get("card_gap_pt_measured") != raw_gap:
             errors.append(f"[地面真值] dark.json 中的 card_gap_pt_measured ({d_sm.get('card_gap_pt_measured')}) 与 raw ({raw_gap}) 不符")
+
+    # 对照 section_gap
+    if raw_section_gap is not None:
+        if l_sm.get("section_gap_pt_measured") != raw_section_gap:
+            errors.append(f"[地面真值] light.json 中的 section_gap_pt_measured ({l_sm.get('section_gap_pt_measured')}) 与 raw ({raw_section_gap}) 不符")
+        if d_sm.get("section_gap_pt_measured") != raw_section_gap:
+            errors.append(f"[地面真值] dark.json 中的 section_gap_pt_measured ({d_sm.get('section_gap_pt_measured')}) 与 raw ({raw_section_gap}) 不符")
+
+    # 对照 separator_inset
+    if raw_sep_inset is not None:
+        if l_sm.get("separator_inset_left_pt_measured") != raw_sep_inset:
+            errors.append(f"[地面真值] light.json 中的 separator_inset_left_pt_measured ({l_sm.get('separator_inset_left_pt_measured')}) 与 raw ({raw_sep_inset}) 不符")
+        if d_sm.get("separator_inset_left_pt_measured") != raw_sep_inset:
+            errors.append(f"[地面真值] dark.json 中的 separator_inset_left_pt_measured ({d_sm.get('separator_inset_left_pt_measured')}) 与 raw ({raw_sep_inset}) 不符")
+
+    # 对照 traditional_radius
+    if raw_radius is not None:
+        if l_sm.get("traditional_card_radius_pt_measured") != raw_radius:
+            errors.append(f"[地面真值] light.json 中的 traditional_card_radius_pt_measured ({l_sm.get('traditional_card_radius_pt_measured')}) 与 raw ({raw_radius}) 不符")
+        if d_sm.get("traditional_card_radius_pt_measured") != raw_radius:
+            errors.append(f"[地面真值] dark.json 中的 traditional_card_radius_pt_measured ({d_sm.get('traditional_card_radius_pt_measured')}) 与 raw ({raw_radius}) 不符")
 
     return errors, warnings_list
 
@@ -352,8 +386,12 @@ def validate_single_mode(folder: Path, mode: str, verbose: bool = False) -> bool
             raw_data = json.loads(raw_path.read_text(encoding="utf-8"))
             sm = data.get("script_measurements", {})
             raw_sample_bg = raw_data.get(f"{mode}_mode_samples", {}).get("background_hex")
-            raw_margin = raw_data.get("measured_metrics_pt", {}).get("screen_horizontal_margin_pt")
-            raw_gap = raw_data.get("measured_metrics_pt", {}).get("card_vertical_gap_pt")
+            raw_metrics = raw_data.get("measured_metrics_pt", {})
+            raw_margin = raw_metrics.get("screen_horizontal_margin_pt")
+            raw_gap = raw_metrics.get("card_vertical_gap_pt")
+            raw_section_gap = raw_metrics.get("section_vertical_gap_pt")
+            raw_sep_inset = raw_metrics.get("separator_inset_left_pt")
+            raw_radius = raw_metrics.get("traditional_card_radius_pt")
 
             if raw_sample_bg and sm.get("background_hex_measured") != raw_sample_bg:
                 all_errors.append(f"[地面真值] {target_file.name} 中的 background_hex_measured ({sm.get('background_hex_measured')}) 与 raw ({raw_sample_bg}) 不符")
@@ -361,6 +399,12 @@ def validate_single_mode(folder: Path, mode: str, verbose: bool = False) -> bool
                 all_errors.append(f"[地面真值] {target_file.name} 中的 screen_margin_pt_measured ({sm.get('screen_margin_pt_measured')}) 与 raw ({raw_margin}) 不符")
             if raw_gap is not None and sm.get("card_gap_pt_measured") != raw_gap:
                 all_errors.append(f"[地面真值] {target_file.name} 中的 card_gap_pt_measured ({sm.get('card_gap_pt_measured')}) 与 raw ({raw_gap}) 不符")
+            if raw_section_gap is not None and sm.get("section_gap_pt_measured") != raw_section_gap:
+                all_errors.append(f"[地面真值] {target_file.name} 中的 section_gap_pt_measured ({sm.get('section_gap_pt_measured')}) 与 raw ({raw_section_gap}) 不符")
+            if raw_sep_inset is not None and sm.get("separator_inset_left_pt_measured") != raw_sep_inset:
+                all_errors.append(f"[地面真值] {target_file.name} 中的 separator_inset_left_pt_measured ({sm.get('separator_inset_left_pt_measured')}) 与 raw ({raw_sep_inset}) 不符")
+            if raw_radius is not None and sm.get("traditional_card_radius_pt_measured") != raw_radius:
+                all_errors.append(f"[地面真值] {target_file.name} 中的 traditional_card_radius_pt_measured ({sm.get('traditional_card_radius_pt_measured')}) 与 raw ({raw_radius}) 不符")
         except Exception as e:
             all_warnings.append(f"raw_measurements.json 比对异常: {e}")
 

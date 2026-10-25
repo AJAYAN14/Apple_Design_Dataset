@@ -312,26 +312,40 @@ def measure_card_vertical_gap(mask: np.ndarray, scale: int) -> dict:
     segments.append((current_type, seg_start, y1))
 
     # ── 过滤 ─────────────────────────────────────────────
-    card_bounds = []
-    gap_ranges = []
+    # ── 过滤与微缝桥接 (合并卡片内部发丝线，解耦宏观 Section 留白) ───────
+    raw_card_bounds = []
+    raw_gap_ranges = []
     gap_heights = []
 
     for seg_type, s, e in segments:
         height = e - s
         if seg_type == "card" and height >= MIN_GAP_PX:
-            card_bounds.append({"y_start": int(s), "y_end": int(e)})
+            raw_card_bounds.append({"y_start": int(s), "y_end": int(e)})
         elif seg_type == "gap" and height >= MIN_GAP_PX:
-            gap_ranges.append({
+            raw_gap_ranges.append({
                 "y_start": int(s),
                 "y_end": int(e),
                 "height_px": int(height),
             })
             gap_heights.append(height)
 
+    # 桥接卡片内部 <= 3pt 的微小发丝线缝隙，还原真实的卡片容器整体
+    bridged_cards = []
+    if raw_card_bounds:
+        max_bridge_px = int(round(3.5 * scale))
+        bridged_cards = [raw_card_bounds[0].copy()]
+        for cur in raw_card_bounds[1:]:
+            if cur["y_start"] - bridged_cards[-1]["y_end"] <= max_bridge_px:
+                bridged_cards[-1]["y_end"] = cur["y_end"]
+            else:
+                bridged_cards.append(cur.copy())
+
     if not gap_heights:
         return {
             "gap_pt": None,
-            "card_bounds_px": card_bounds,
+            "section_gap_pt": None,
+            "card_bounds_px": bridged_cards or raw_card_bounds,
+            "raw_card_bounds_px": raw_card_bounds,
             "gap_ranges_px": [],
             "failure_reason": "no_gaps_detected",
         }
@@ -339,10 +353,74 @@ def measure_card_vertical_gap(mask: np.ndarray, scale: int) -> dict:
     binned = [(g // scale) * scale for g in gap_heights]
     mode_px = Counter(binned).most_common(1)[0][0]
 
+    # 计算跨容器的大留白 (Section Gap)
+    section_gaps = []
+    for i in range(len(bridged_cards) - 1):
+        sg = (bridged_cards[i + 1]["y_start"] - bridged_cards[i]["y_end"]) / scale
+        if sg >= 16.0:  # 大于 16pt 视为 Section 间距
+            section_gaps.append(sg)
+    section_gap_pt = round(float(np.median(section_gaps)), 1) if section_gaps else round(mode_px / scale, 1)
+
     return {
         "gap_pt": round(mode_px / scale, 1),
-        "card_bounds_px": card_bounds,
-        "gap_ranges_px": gap_ranges,
+        "section_gap_pt": section_gap_pt,
+        "card_bounds_px": bridged_cards or raw_card_bounds,
+        "raw_card_bounds_px": raw_card_bounds,
+        "gap_ranges_px": raw_gap_ranges,
+    }
+
+
+def measure_card_separator_inset(img: np.ndarray, card_bounds: list, margin_info: dict, scale: float) -> dict:
+    """通用列表分隔线左缩进自动探测器（跨平台纯几何算法，零 HIG 预设）。
+    
+    算法：
+      在卡片内部寻找横向直线（长度 >= 卡片宽度 40%，且距离卡片顶底边界 > 18pt）。
+      提取直线起点的横坐标 X_start，计算其相对卡片左侧物理边界的偏移：
+        inset_left_pt = (X_start - X_card_left) / scale
+    """
+    if not card_bounds or margin_info.get("left_edge_px") is None:
+        return {"inset_left_pt": None, "confidence": "none", "detected_lines": 0}
+
+    left_x = int(margin_info["left_edge_px"])
+    right_x = int(margin_info["right_edge_px"])
+    card_w = right_x - left_x
+    if card_w <= 0:
+        return {"inset_left_pt": None, "confidence": "none", "detected_lines": 0}
+
+    gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
+    insets = []
+
+    for b in card_bounds:
+        y0, y1 = b["y_start"], b["y_end"]
+        # 仅在高度大于 50pt 的卡片容器内部搜索
+        if (y1 - y0) < 50 * scale:
+            continue
+        pad_y = int(round(18 * scale))
+        if y1 - y0 <= 2 * pad_y:
+            continue
+
+        roi = gray[y0 + pad_y : y1 - pad_y, left_x : right_x]
+        sobely = np.abs(cv2.Sobel(roi, cv2.CV_64F, 0, 1, ksize=3))
+        
+        for row_idx in range(roi.shape[0]):
+            line = sobely[row_idx, :]
+            active = np.where(line > 7.5)[0]
+            if len(active) >= card_w * 0.40:
+                start_x = active[0]
+                if start_x > 4 * scale:
+                    insets.append(start_x)
+                elif start_x <= 4 * scale and active[-1] >= card_w * 0.95:
+                    insets.append(0.0)
+
+    if not insets:
+        return {"inset_left_pt": None, "confidence": "none", "detected_lines": 0}
+
+    median_px = float(np.median(insets))
+    inset_pt = round(median_px / scale, 1)
+    return {
+        "inset_left_pt": inset_pt,
+        "confidence": "high" if len(insets) >= 2 else "medium",
+        "detected_lines": len(insets)
     }
 
 
@@ -361,16 +439,23 @@ def estimate_card_corner_radius(img: np.ndarray, bg: tuple, card_bounds: list,
 
     left_x = int(margin_info["left_edge_px"])
     right_x = int(margin_info["right_edge_px"])
+    
+    # 优先选取高度适中 (50pt ~ 120pt) 的独立干净卡片作为圆角测量目标
     target_card = None
     for b in card_bounds:
-        if b["y_end"] - b["y_start"] >= 40 * scale:
+        h_pt = (b["y_end"] - b["y_start"]) / scale
+        if 45.0 <= h_pt <= 150.0:
             target_card = b
             break
+    if not target_card and card_bounds:
+        target_card = card_bounds[0]
     if not target_card:
         return empty_res
 
     y0, y1 = target_card["y_start"], target_card["y_end"]
-    roi_size = int(round(40 * scale))
+    card_h = y1 - y0
+    # 自适应 ROI 窗口尺寸，避免硬编码 40pt 截断 24dp 等较大圆角
+    roi_size = int(round(min(card_h * 0.45, 64 * scale)))
     if y0 + roi_size > img.shape[0] or left_x + roi_size > img.shape[1]:
         return empty_res
 
@@ -396,7 +481,6 @@ def estimate_card_corner_radius(img: np.ndarray, bg: tuple, card_bounds: list,
         return empty_res
 
     # ── 亚像素边缘提取 (借鉴 Devernay 二次峰值插值算法) ───────────
-    # 利用 Sobel 计算局部梯度与主方向，将整数边缘坐标平滑至浮点亚像素 (精度 ~0.1px)
     gx = cv2.Sobel(blurred, cv2.CV_64F, 1, 0, ksize=3)
     gy = cv2.Sobel(blurred, cv2.CV_64F, 0, 1, ksize=3)
     modG = np.sqrt(gx**2 + gy**2)
@@ -409,7 +493,6 @@ def estimate_card_corner_radius(img: np.ndarray, bg: tuple, card_bounds: list,
             g_abs_x = abs(gx[py, px])
             g_abs_y = abs(gy[py, px])
             if g_abs_x >= g_abs_y:
-                # 水平为主方向
                 a = modG[py, px - 1]
                 b = modG[py, px]
                 c = modG[py, px + 1]
@@ -419,7 +502,6 @@ def estimate_card_corner_radius(img: np.ndarray, bg: tuple, card_bounds: list,
                 sub_xs.append(px + offset - 5)
                 sub_ys.append(py - 5)
             else:
-                # 垂直为主方向
                 a = modG[py - 1, px]
                 b = modG[py, px]
                 c = modG[py + 1, px]
@@ -434,7 +516,8 @@ def estimate_card_corner_radius(img: np.ndarray, bg: tuple, card_bounds: list,
 
     sub_xs = np.array(sub_xs, dtype=float)
     sub_ys = np.array(sub_ys, dtype=float)
-    corner_mask = (sub_xs >= 0) & (sub_ys >= 0) & (sub_xs < roi_size * 0.8) & (sub_ys < roi_size * 0.8)
+    # 扩大有效拐角采样范围至 roi_size * 0.92
+    corner_mask = (sub_xs >= 0) & (sub_ys >= 0) & (sub_xs < roi_size * 0.92) & (sub_ys < roi_size * 0.92)
     c_xs = sub_xs[corner_mask]
     c_ys = sub_ys[corner_mask]
 
@@ -705,6 +788,30 @@ def main():
     else:
         gap_pt = None
 
+    # ── 列表分隔线左缩进探测 (通用无假设几何测量) ──────
+    sep_l = measure_card_separator_inset(l_img, gap_l["card_bounds_px"], margin_l, scale)
+    sep_d = measure_card_separator_inset(d_img, gap_d["card_bounds_px"], margin_d, scale)
+
+    sl, sd = sep_l["inset_left_pt"], sep_d["inset_left_pt"]
+    if sl is not None and sd is not None:
+        separator_inset_pt = round((sl + sd) / 2, 1)
+    elif sl is not None:
+        separator_inset_pt = sl
+    elif sd is not None:
+        separator_inset_pt = sd
+    else:
+        separator_inset_pt = None
+
+    sgl, sgd = gap_l.get("section_gap_pt"), gap_d.get("section_gap_pt")
+    if sgl is not None and sgd is not None:
+        section_gap_pt = round((sgl + sgd) / 2, 1)
+    elif sgl is not None:
+        section_gap_pt = sgl
+    elif sgd is not None:
+        section_gap_pt = sgd
+    else:
+        section_gap_pt = None
+
     # ── 卡片圆角半径拟合 ──────────────────────────────────
     radius_l = estimate_card_corner_radius(l_img, l_raw_bg, gap_l["card_bounds_px"], margin_l, scale)
     radius_d = estimate_card_corner_radius(d_img, d_raw_bg, gap_d["card_bounds_px"], margin_d, scale)
@@ -717,6 +824,12 @@ def main():
           f"(Light {ml} / Dark {md})")
     print(f"  卡片垂直间距 ≈ {gap_pt} pt  "
           f"(Light {gl} / Dark {gd})")
+    if section_gap_pt is not None:
+        print(f"  跨 Section 宏观留白 ≈ {section_gap_pt} pt  "
+              f"(Light {sgl} / Dark {sgd})")
+    if separator_inset_pt is not None:
+        print(f"  列表分隔线左缩进 ≈ {separator_inset_pt} pt  "
+              f"(Light {sl} / Dark {sd})")
     if trad_r_l is not None:
         comp_str = f" (微光补偿建议: ~{comp_r_l} pt)" if comp_r_l else ""
         print(f"  传统圆角拟合 ≈ {trad_r_l} pt{comp_str}")
@@ -748,6 +861,8 @@ def main():
         "measured_metrics_pt": {
             "screen_horizontal_margin_pt": margin_pt,
             "card_vertical_gap_pt": gap_pt,
+            "section_vertical_gap_pt": section_gap_pt,
+            "separator_inset_left_pt": separator_inset_pt,
             "traditional_card_radius_pt": trad_r_l,
             "compensated_card_radius_pt": comp_r_l,
             "superellipse_curvature": se_l,
@@ -759,11 +874,13 @@ def main():
                 "margin": margin_l,
                 "gap": gap_l,
                 "radius": radius_l,
+                "separator": sep_l,
             },
             "dark": {
                 "margin": margin_d,
                 "gap": gap_d,
                 "radius": radius_d,
+                "separator": sep_d,
             },
         },
     }

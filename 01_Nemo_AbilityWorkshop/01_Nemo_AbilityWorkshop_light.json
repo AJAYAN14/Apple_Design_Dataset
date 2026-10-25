@@ -161,6 +161,8 @@
     "candidate_surface_hex_measured": "#E8F2F3",
     "candidate_surface_confidence": "low",
     "screen_margin_pt_measured": 16.0,
-    "card_gap_pt_measured": 16.0
+    "card_gap_pt_measured": 16.0,
+    "traditional_card_radius_pt_measured": 23.9,
+    "superellipse_exponent_measured": 1.97
   }
 }
