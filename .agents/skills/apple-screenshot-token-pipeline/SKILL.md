@@ -32,6 +32,8 @@ A specialized skill for extracting pixel-accurate Apple Design Tokens from paire
 
      ```bash
      python .agents/skills/apple-screenshot-token-pipeline/measure_helper.py <folder_path>
+     # 可选：生成梯度法向彩虹伪彩图与 CLAHE 增强图，辅助多模态视觉审视微光边缘
+     # python .agents/skills/apple-screenshot-token-pipeline/measure_helper.py <folder_path> --visualize
      ```
 
    - Read `raw_measurements.json` for baseline ground truth (margins, gaps, traditional radius, superellipse formula).
