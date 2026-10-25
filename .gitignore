@@ -14,3 +14,7 @@ Thumbs.db
 desktop.ini
 .vscode/
 .idea/
+
+# 外部参考项目（避免嵌套 Git 仓库冲突）
+参考项目/
+
