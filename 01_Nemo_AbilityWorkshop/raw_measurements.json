@@ -58,11 +58,11 @@
     "traditional_card_radius_pt": 23.9,
     "compensated_card_radius_pt": 28.2,
     "superellipse_curvature": {
-      "shape_exponent_n": 2.05,
-      "radius_a_pt": 24.8,
-      "radius_b_pt": 24.7,
+      "shape_exponent_n": 1.97,
+      "radius_a_pt": 23.5,
+      "radius_b_pt": 23.6,
       "curve_style": "circular_standard",
-      "exact_formula": "|x / 24.8|^2.05 + |y / 24.7|^2.05 = 1",
+      "exact_formula": "|x / 23.5|^1.97 + |y / 23.6|^1.97 = 1",
       "figma_corner_smoothing": 0.0
     },
     "margin_consensus": "valid",
@@ -151,11 +151,11 @@
           "compensated_radius_pt": 28.2
         },
         "superellipse": {
-          "shape_exponent_n": 2.05,
-          "radius_a_pt": 24.8,
-          "radius_b_pt": 24.7,
+          "shape_exponent_n": 1.97,
+          "radius_a_pt": 23.5,
+          "radius_b_pt": 23.6,
           "curve_style": "circular_standard",
-          "exact_formula": "|x / 24.8|^2.05 + |y / 24.7|^2.05 = 1",
+          "exact_formula": "|x / 23.5|^1.97 + |y / 23.6|^1.97 = 1",
           "figma_corner_smoothing": 0.0
         },
         "is_subtle_tint": true,
@@ -240,15 +240,15 @@
       },
       "radius": {
         "traditional_circle": {
-          "radius_pt": 23.7,
-          "compensated_radius_pt": 28.0
+          "radius_pt": 24.0,
+          "compensated_radius_pt": 28.3
         },
         "superellipse": {
-          "shape_exponent_n": 1.95,
-          "radius_a_pt": 23.2,
-          "radius_b_pt": 23.3,
+          "shape_exponent_n": 2.09,
+          "radius_a_pt": 25.4,
+          "radius_b_pt": 25.4,
           "curve_style": "circular_standard",
-          "exact_formula": "|x / 23.2|^1.95 + |y / 23.3|^1.95 = 1",
+          "exact_formula": "|x / 25.4|^2.09 + |y / 25.4|^2.09 = 1",
           "figma_corner_smoothing": 0.0
         },
         "is_subtle_tint": true,

@@ -395,11 +395,48 @@ def estimate_card_corner_radius(img: np.ndarray, bg: tuple, card_bounds: list,
         empty_res["confidence"] = "low_points"
         return empty_res
 
-    ys = (pts[:, 0].astype(float) - 5)
-    xs = (pts[:, 1].astype(float) - 5)
-    corner_mask = (xs >= 0) & (ys >= 0) & (xs < roi_size * 0.8) & (ys < roi_size * 0.8)
-    c_xs = xs[corner_mask]
-    c_ys = ys[corner_mask]
+    # ── 亚像素边缘提取 (借鉴 Devernay 二次峰值插值算法) ───────────
+    # 利用 Sobel 计算局部梯度与主方向，将整数边缘坐标平滑至浮点亚像素 (精度 ~0.1px)
+    gx = cv2.Sobel(blurred, cv2.CV_64F, 1, 0, ksize=3)
+    gy = cv2.Sobel(blurred, cv2.CV_64F, 0, 1, ksize=3)
+    modG = np.sqrt(gx**2 + gy**2)
+
+    sub_xs = []
+    sub_ys = []
+    h_roi, w_roi = blurred.shape
+    for py, px in pts:
+        if 1 <= px < w_roi - 1 and 1 <= py < h_roi - 1:
+            g_abs_x = abs(gx[py, px])
+            g_abs_y = abs(gy[py, px])
+            if g_abs_x >= g_abs_y:
+                # 水平为主方向
+                a = modG[py, px - 1]
+                b = modG[py, px]
+                c = modG[py, px + 1]
+                denom = a - 2.0 * b + c
+                offset = 0.5 * (a - c) / denom if abs(denom) > 1e-5 else 0.0
+                offset = np.clip(offset, -0.6, 0.6)
+                sub_xs.append(px + offset - 5)
+                sub_ys.append(py - 5)
+            else:
+                # 垂直为主方向
+                a = modG[py - 1, px]
+                b = modG[py, px]
+                c = modG[py + 1, px]
+                denom = a - 2.0 * b + c
+                offset = 0.5 * (a - c) / denom if abs(denom) > 1e-5 else 0.0
+                offset = np.clip(offset, -0.6, 0.6)
+                sub_xs.append(px - 5)
+                sub_ys.append(py + offset - 5)
+        else:
+            sub_xs.append(px - 5)
+            sub_ys.append(py - 5)
+
+    sub_xs = np.array(sub_xs, dtype=float)
+    sub_ys = np.array(sub_ys, dtype=float)
+    corner_mask = (sub_xs >= 0) & (sub_ys >= 0) & (sub_xs < roi_size * 0.8) & (sub_ys < roi_size * 0.8)
+    c_xs = sub_xs[corner_mask]
+    c_ys = sub_ys[corner_mask]
 
     if len(c_xs) < 10:
         empty_res["is_subtle_tint"] = is_subtle_tint
@@ -422,6 +459,7 @@ def estimate_card_corner_radius(img: np.ndarray, bg: tuple, card_bounds: list,
         pass
 
     # ── 2. 超椭圆连续曲率拟合 (Superellipse Fitting, G2/G3 方程与指数) ──
+    # 结合智驾鲁棒损失 (Soft L1 Loss) 抑制微光边缘噪声
     superellipse_data = {
         "shape_exponent_n": None,
         "radius_a_pt": None,
@@ -443,7 +481,8 @@ def estimate_card_corner_radius(img: np.ndarray, bg: tuple, card_bounds: list,
             bounds = ([init_r*0.5, init_r*0.5, init_r*0.5, init_r*0.5, 1.8],
                       [init_r*1.8, init_r*1.8, init_r*1.8, init_r*1.8, 6.0])
 
-            res_s = least_squares(loss_superellipse, p0, bounds=bounds)
+            # 采用 soft_l1 鲁棒核函数（Huber 平滑近似），自动下调离群点权重
+            res_s = least_squares(loss_superellipse, p0, bounds=bounds, loss='soft_l1', f_scale=0.1)
             _, _, a, b, n = res_s.x
             a_pt = round(a / scale, 1)
             b_pt = round(b / scale, 1)
@@ -479,6 +518,48 @@ def estimate_card_corner_radius(img: np.ndarray, bg: tuple, card_bounds: list,
         "is_subtle_tint": is_subtle_tint,
         "confidence": "high" if (trad_pt and superellipse_data["shape_exponent_n"]) else "medium"
     }
+
+
+def generate_diagnostic_color_maps(img: np.ndarray, folder: Path, mode: str) -> dict:
+    """根据智能驾驶与计算机视觉算法，生成辅助调试与多模态视觉审视的预处理染色图：
+    1. {mode}_gradient_rainbow.png: 梯度法向 HSV 彩虹伪彩染色图
+    2. {mode}_enhanced_clahe.png: CLAHE 自适应局部对比度增强图 (将 0.06 微光反差放大)
+    """
+    res = {}
+    try:
+        # 1. 梯度方向彩虹伪彩染色图
+        gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
+        gx = cv2.Sobel(gray, cv2.CV_64F, 1, 0, ksize=3)
+        gy = cv2.Sobel(gray, cv2.CV_64F, 0, 1, ksize=3)
+        mag, angle = cv2.cartToPolar(gx, gy, angleInDegrees=True)
+
+        # 映射到 HSV：色相 Hue 0~180 (角度/2), 饱和度 Saturation 255, 亮度 Value 增强梯度幅值
+        h = (angle / 2.0).astype(np.uint8)
+        v = cv2.normalize(mag, None, 0, 255, cv2.NORM_MINMAX).astype(np.uint8)
+        s = np.full_like(h, 255)
+        # 背景平坦无边缘区域压暗
+        s[v < 18] = 0
+        v[v < 18] = 15
+
+        hsv = cv2.merge([h, s, v])
+        rainbow_bgr = cv2.cvtColor(hsv, cv2.COLOR_HSV2BGR)
+        rainbow_path = folder / f"{mode}_gradient_rainbow.png"
+        cv2.imwrite(str(rainbow_path), rainbow_bgr)
+        res["rainbow"] = str(rainbow_path)
+
+        # 2. CLAHE 局部自适应对比度增强图 (强化 Alpha 0.06 微光卡片边界)
+        lab = cv2.cvtColor(img, cv2.COLOR_RGB2LAB)
+        l, a, b = cv2.split(lab)
+        clahe = cv2.createCLAHE(clipLimit=4.0, tileGridSize=(8, 8))
+        cl = clahe.apply(l)
+        enhanced_lab = cv2.merge((cl, a, b))
+        enhanced_bgr = cv2.cvtColor(enhanced_lab, cv2.COLOR_LAB2BGR)
+        clahe_path = folder / f"{mode}_enhanced_clahe.png"
+        cv2.imwrite(str(clahe_path), enhanced_bgr)
+        res["clahe"] = str(clahe_path)
+    except Exception as e:
+        pass
+    return res
 
 
 # ══════════════════════════════════════════════════════════
@@ -521,6 +602,10 @@ def main():
     parser.add_argument(
         "--scale", type=float, default=None,
         help="强制指定缩放倍率（覆盖自动检测）。例: --scale 2 或 --scale 2.625",
+    )
+    parser.add_argument(
+        "--visualize", action="store_true", default=False,
+        help="生成梯度彩虹伪彩染色图与 CLAHE 增强图，辅助多模态 AI 与人工直观审视",
     )
     args = parser.parse_args()
 
@@ -573,6 +658,18 @@ def main():
     d_bg, d_cand, d_mask, d_kparams, _, d_img, d_raw_bg = analyze_single(dark_path, scale)
     print(f"  [Dark]  背景 {d_bg}  候选表面色 {d_cand['color_hex']}"
           f" (面积 {d_cand['area_ratio']}, 置信度 {d_cand['confidence']})")
+
+    # ── 诊断与预处理伪彩染色图 (智驾与 CV 增强) ─────────
+    if args.visualize:
+        print("\n🎨 正在生成伪彩色与对比度诊断染色图...")
+        maps_l = generate_diagnostic_color_maps(l_img, folder, "light")
+        maps_d = generate_diagnostic_color_maps(d_img, folder, "dark")
+        if maps_l.get("rainbow"):
+            print(f"  [Light 染色] 彩虹伪彩: {maps_l['rainbow']}")
+            print(f"  [Light 增强] CLAHE:    {maps_l['clahe']}")
+        if maps_d.get("rainbow"):
+            print(f"  [Dark 染色]  彩虹伪彩: {maps_d['rainbow']}")
+            print(f"  [Dark 增强]  CLAHE:    {maps_d['clahe']}")
 
     # ── 间距测量 ─────────────────────────────────────────
     margin_l = measure_horizontal_margin(l_mask, scale)
