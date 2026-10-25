@@ -32,18 +32,19 @@ trigger: always_on
   - ✅ **单次会话职责严格止步于当前文件夹的提取与校验**，完成当前组的质检即结束，等待用户下一步指示。
 - **文件命名统一规范 (File Naming Standard)**：
   - 截图命名：`{文件夹名}_light.<ext>` 与 `{文件夹名}_dark.<ext>`（不限定为 PNG，支持 `.png`、`.jpg`、`.jpeg`、`.webp` 等常见图片格式）。
-  - 数据文件：`{文件夹名}_light.json` 与 `{文件夹名}_dark.json`。
+  - 数据文件：`{文件夹名}_light.json`、`{文件夹名}_dark.json` 与 `{文件夹名}_layout.json`。
 - **拒绝脑补 (Zero Hallucination)**：严禁主观凭空猜测数值。所有几何尺寸、色彩必须以"脚本实测数据为主，视觉语义校准为辅"。未被明确观测到的属性标注 `null` 或 `"unobserved"`，不可编造。
 - **对称校验 (Pair Consistency)**：深色模式下的几何骨架（间距、圆角、字阶阶梯）必须直接继承浅色模式确立的基准，保持严格像素级数学恒等。两个 JSON 中的 `geometry`、`spacing`、`typography` 字段值必须完全一致。
 - **严禁生成额外记录文档 (No Extraneous Documentation)**：
-  - ⛔ **绝对禁止**在工作区根目录或子文件夹生成诸如 `implementation-notes.md`、`notes.md`、`summary.md` 等非标准记录文档；
-  - ✅ **单组产出物严格限定为规定的 5 个文件**：
+  - ⛔ **绝对禁止**在工作区根目录或子文件夹生成诸如 `implementation-notes.md`、`notes.md`、`summary.md` 等非标准临时记录文档；
+  - ✅ **单组产出物严格限定为规定的 6 个文件**：
     1. `{文件夹名}_light.<ext>`
     2. `{文件夹名}_dark.<ext>`
     3. `raw_measurements.json`
     4. `{文件夹名}_light.json`
     5. `{文件夹名}_dark.json`
-  - 任何测量校准说明与细节直接记录在 JSON 内的 `_notes` 字段或在对话回复中陈述，严禁额外落盘任何 Markdown 过程文档。
+    6. `{文件夹名}_layout.json` (布局架构蓝图: 字符线框+组件拓扑+设计意图+双端代码骨架)
+  - 任何测量校准说明与细节直接记录在 JSON 内的 `_notes` 字段或在对话回复中陈述，若需查看格式化 Markdown，统一通过 `export_blueprint.py` 按需动态导出。
 - **单位纪律 (Unit Discipline)**：所有尺寸统一使用 iOS 标准点数 **pt**（`pt = px / scale_factor`）。禁止在 JSON 中出现无单位裸数字或物理像素（px）。
 
 ---
@@ -73,7 +74,7 @@ trigger: always_on
 
 ### Step 2：阶段一 —— 浅色模式专属分析与初验 (Light Mode Baseline)
 
-> **铁律**：此时视线仅聚焦在 `{文件夹名}_light.<ext>`，严禁提前生成深色文件。
+> **铁律**：此时视线仅聚焦在 `{文件夹名}_light.<ext>`，严禁提前生成深色或布局文件。
 
 1. **视觉分析与基准建立**：
    - 结合 `raw_measurements.json` 的 `light_mode_samples` 与 `light.png`，提取完整 6 大维度。
@@ -102,12 +103,36 @@ trigger: always_on
      - 边界材质：是否存在 `0.33pt` 或 `0.5pt` 的弱光轮廓发丝线（如 `#FFFFFF 10%`）；
      - 文字对比度与深色高亮强调色（如 `#0A84FF`）。
 3. **输出深色文件**：在子文件夹中写入 `{文件夹名}_dark.json`（例如 `01_Settings_RootList_dark.json`）。
+4. **执行深色单体验证**：
+
+   ```bash
+   python .agents/skills/apple-screenshot-token-pipeline/validate_pair.py <子文件夹路径> --mode dark
+   ```
 
 ---
 
-### Step 4：阶段三 —— 双模配对闭环校验 (Pair Verification)
+### Step 4：阶段三 —— 布局架构蓝图提取与验证 (Layout Architecture Blueprint)
 
-1. 两个文件均生成后，立即执行全量双模配对校验脚本：
+> **目的**：将界面从“冰冷的 Token 字典”升华到“真正可借鉴的布局工程架构与双端代码”。
+
+1. **结构化提取**：
+   - **判定布局范式 (Archetype)**：如 `inset_grouped_list`、`bento_grid`、`detail_editor`、`dashboard_metrics` 等；
+   - **绘制 ASCII 线框图 (Visual Wireframe)**：直观展现页面切分（Nav、Hero、Group、BottomBar）与视线动线；
+   - **构建组件拓扑树 (Component Tree)**：精准梳理 Scaffold、TopBar、ScrollContainer、Sections、Items、Separators 的父子层级与对齐规则；
+   - **推导设计策略意图 (Design Rationale)**：解析 Apple 设计师为何采用该布局、视线第一落点、留白呼吸节奏；
+   - **生成开箱即用代码骨架 (Code Skeletons)**：输出 100% 结构对齐的 Jetpack Compose 与 SwiftUI 完整运行代码骨架。
+2. **输出布局文件**：在子文件夹中写入 `{文件夹名}_layout.json`（严格遵循 `layout_schema.json`）。
+3. **执行布局单体验证**：
+
+   ```bash
+   python .agents/skills/apple-screenshot-token-pipeline/validate_pair.py <子文件夹路径> --mode layout
+   ```
+
+---
+
+### Step 5：阶段四 —— 全量配对闭环校验 (Full Suite Verification)
+
+1. 三个数据文件均生成后，立即执行全量闭环校验脚本：
 
    ```bash
    python .agents/skills/apple-screenshot-token-pipeline/validate_pair.py <子文件夹路径>
@@ -116,15 +141,26 @@ trigger: always_on
 2. 校验脚本会自动验证：
    - `{文件夹名}_light.json` 与 `{文件夹名}_dark.json` 的 Schema 规范性与数值类型纪律；
    - 深浅模式下的几何、间距、字体是否达到严格的像素级对称；
-   - 是否与 `raw_measurements.json` 地面真值对齐。
+   - 是否与 `raw_measurements.json` 地面真值对齐；
+   - `{文件夹名}_layout.json` 的组件树、线框图、意图解析与双端代码骨架是否全部合格；
+   - 布局文件与 Tokens 文件在应用名与视图名上的一致性。
 3. 确认终端输出 `🎉 完美！该组深浅配对 Design Tokens 全部合格，完全符合工业级契约规范！`，单次会话方可宣告结束。
+4. （可选）如需向人类展示可读蓝图文档或提取源码：
+
+   ```bash
+   python .agents/skills/apple-screenshot-token-pipeline/export_blueprint.py <子文件夹路径> --write-file
+   ```
 
 ---
 
-## 3. JSON 输出 Schema
+## 3. JSON 数据契约 (Data Contracts)
 
-Token 文件的固定结构定义在 **`.agents/skills/apple-screenshot-token-pipeline/design_token_schema.json`** 文件中。
-生成 `{文件夹名}_light.json` 与 `{文件夹名}_dark.json` 时，必须严格按照该 Schema 的键名和层级结构填充数据。
+系统由两套强类型 JSON Schema 契约联合管辖：
+
+1. **Tokens 数据契约**：[`.agents/skills/apple-screenshot-token-pipeline/design_token_schema.json`](file:///e:/Apple_Design_Dataset/.agents/skills/apple-screenshot-token-pipeline/design_token_schema.json)
+   - 严格约束 `light.json` 与 `dark.json` 的 6 大设计维度数值。
+2. **Layout 架构蓝图契约**：[`.agents/skills/apple-screenshot-token-pipeline/layout_schema.json`](file:///e:/Apple_Design_Dataset/.agents/skills/apple-screenshot-token-pipeline/layout_schema.json)
+   - 严格约束 `{folder}_layout.json` 的组件树拓扑、字符线框、设计意图解析与双端可运行代码骨架。
 
 ### Schema 使用规则
 

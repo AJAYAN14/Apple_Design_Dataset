@@ -34,9 +34,11 @@ Apple 官方的 HIG（Human Interface Guidelines）偏概念与原则，缺少�
 |---|---|---|
 | **专用 Skill** | [`.agents/skills/apple-screenshot-token-pipeline/SKILL.md`](file:///e:/Apple_Design_Dataset/.agents/skills/apple-screenshot-token-pipeline/SKILL.md) | Agent 逆向工程流水线专有技能定义与操作手册 |
 | **测量辅助脚本** | [`.agents/skills/apple-screenshot-token-pipeline/measure_helper.py`](file:///e:/Apple_Design_Dataset/.agents/skills/apple-screenshot-token-pipeline/measure_helper.py) | 本地 Python 脚本，提取物理精确色值与间距，输出 `raw_measurements.json` |
-| **合规校验脚本** | [`.agents/skills/apple-screenshot-token-pipeline/validate_pair.py`](file:///e:/Apple_Design_Dataset/.agents/skills/apple-screenshot-token-pipeline/validate_pair.py) | 本地 Python 脚本，自动化校验两个 JSON 语法、类型纪律、深浅对称性与真值一致性 |
+| **合规校验脚本** | [`.agents/skills/apple-screenshot-token-pipeline/validate_pair.py`](file:///e:/Apple_Design_Dataset/.agents/skills/apple-screenshot-token-pipeline/validate_pair.py) | 本地 Python 脚本，自动化校验 Tokens 与 Layout 语法、类型纪律、深浅对称性与真值一致性 |
+| **导出辅助脚本** | [`.agents/skills/apple-screenshot-token-pipeline/export_blueprint.py`](file:///e:/Apple_Design_Dataset/.agents/skills/apple-screenshot-token-pipeline/export_blueprint.py) | 本地 Python 脚本，将结构化 Layout JSON 一键渲染为 Markdown 蓝图或提取 Compose/SwiftUI 代码 |
 | **Token 数据契约** | [`.agents/skills/apple-screenshot-token-pipeline/design_token_schema.json`](file:///e:/Apple_Design_Dataset/.agents/skills/apple-screenshot-token-pipeline/design_token_schema.json) | 统一规范 `light.json` 与 `dark.json` 的字段与结构定义 |
-| **多模态 AI Agent** | 工作区执行核心 | 结合脚本测量数据 + 视觉分析，逆向提取完整 Design Tokens |
+| **Layout 蓝图契约** | [`.agents/skills/apple-screenshot-token-pipeline/layout_schema.json`](file:///e:/Apple_Design_Dataset/.agents/skills/apple-screenshot-token-pipeline/layout_schema.json) | 统一规范 `{folder}_layout.json` 的组件树、线框图、约束与代码骨架定义 |
+| **多模态 AI Agent** | 工作区执行核心 | 结合脚本测量数据 + 视觉分析，逆向提取完整 Tokens 与 Layout 架构 |
 
 ### `measure_helper.py` 能力范围
 
@@ -50,7 +52,7 @@ Apple 官方的 HIG（Human Interface Guidelines）偏概念与原则，缺少�
 - ✅ 跨设备倍率自适应：自动适配 iPhone 经典倍率 (@2x/@3x) 及 Android/HyperOS 浮点高密度倍率 (@2.625x/@3.5x)
 - ❌ 不做：语义组件分类、设计规范文字撰写（由 AI 完成）
 
-## 目录结构
+## 目录结构（每组标准 6 件套产出物）
 
 ```
 Apple_Design_Dataset/
@@ -62,13 +64,16 @@ Apple_Design_Dataset/
 │       └── apple-screenshot-token-pipeline/
 │           ├── measure_helper.py           ← 测量辅助脚本
 │           ├── validate_pair.py            ← 合规校验脚本
-│           └── design_token_schema.json    ← Design Token 结构规范
+│           ├── export_blueprint.py         ← 蓝图渲染与代码提取脚本
+│           ├── design_token_schema.json    ← Design Token 结构规范
+│           └── layout_schema.json          ← Layout 架构蓝图结构规范
 ├── 01_Settings_RootList/           ← 子文件夹：编号_App名_视图名
 │   ├── 01_Settings_RootList_light.png   ← 浅色模式截图 (支持 png/jpg/jpeg/webp)
 │   ├── 01_Settings_RootList_dark.png    ← 深色模式截图 (支持 png/jpg/jpeg/webp)
 │   ├── raw_measurements.json            ← 脚本输出的测量数据
 │   ├── 01_Settings_RootList_light.json  ← AI 输出的浅色模式 Design Tokens
-│   └── 01_Settings_RootList_dark.json   ← AI 输出的深色模式 Design Tokens
+│   ├── 01_Settings_RootList_dark.json   ← AI 输出的深色模式 Design Tokens
+│   └── 01_Settings_RootList_layout.json ← AI 输出的布局架构蓝图 (组件拓扑+意图+可运行双端代码骨架)
 ├── 02_Notes_DetailEditor/
 │   ├── ...
 └── ...

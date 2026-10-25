@@ -1,0 +1,80 @@
+{
+  "view_identity": {
+    "app_name": "App 英文名称",
+    "view_name": "具体视图英文名",
+    "archetype": "inset_grouped_list / bento_grid / detail_editor / dashboard_metrics / media_feed / modal_sheet / search_browse / custom",
+    "device": {
+      "model": "设备型号",
+      "scale_factor": 3,
+      "logical_size_pt": { "w": 393, "h": 852 }
+    }
+  },
+  "wireframe_ascii": "页面的 ASCII 结构示意图（展示 Nav、Hero、卡片区块、TabBar 等布局空间切分与视线流）",
+  "component_tree": {
+    "root": "Scaffold",
+    "top_app_bar": {
+      "type": "LargeTitleNavBar / InlineNavBar / SearchNavBar / Custom / None",
+      "title": "页面标题文本或 null",
+      "collapsible": true,
+      "leading_action": "back / cancel / null",
+      "trailing_actions": []
+    },
+    "scroll_container": {
+      "type": "LazyColumn / ScrollView / LazyVerticalGrid / None",
+      "edge_margin_pt": 16,
+      "section_gap_pt": 16,
+      "sections": [
+        {
+          "section_id": "区块标识符（如 profile_card / main_settings_group）",
+          "header_text": "Section 标题文本或 null",
+          "footer_text": "Section 说明文本或 null",
+          "layout_strategy": "inset_grouped_card / single_card / bento_grid_row / horizontal_carousel / flat_row",
+          "corner_radius_pt": 20,
+          "card_padding": {
+            "top_pt": 16,
+            "bottom_pt": 16,
+            "left_pt": 16,
+            "right_pt": 16
+          },
+          "items": [
+            {
+              "item_type": "list_row / metric_cell / action_button / custom",
+              "height_pt": 44,
+              "leading": { "type": "sf_symbol / avatar / badge / none", "name": "gear", "size_pt": 28 },
+              "content": { "title": "主文本", "subtitle": "副文本或 null" },
+              "trailing": { "type": "chevron / toggle / badge / text_value / none", "value": null }
+            }
+          ],
+          "separator_strategy": {
+            "exists": true,
+            "inset_left_pt": 56,
+            "rule": "align_to_text_start_skipping_icon / full_width / none"
+          }
+        }
+      ]
+    },
+    "bottom_bar": {
+      "type": "TabBar / FloatingActionButton / BottomToolbar / None",
+      "items": []
+    }
+  },
+  "layout_constraints_and_rhythm": {
+    "grid_system": "8pt base grid",
+    "vertical_rhythm": "留白与垂直节奏说明",
+    "density_and_alignment": {
+      "screen_margin_pt": 16,
+      "content_max_width_pt": null,
+      "touch_target_min_height_pt": 44
+    }
+  },
+  "design_intent": {
+    "visual_anchor": "视觉重心锚点描述",
+    "information_hierarchy": "信息层级流向描述",
+    "rationale_for_layout": "Apple 为何采用此种布局的深度设计意图推导"
+  },
+  "code_skeletons": {
+    "jetpack_compose": "@Composable fun ExampleScreen() { ... 包含 Scaffold/LazyColumn/Card/Row 的可运行完整骨架 ... }",
+    "swiftui": "struct ExampleView: View { ... 包含 NavigationStack/List/Section 的可运行完整骨架 ... }"
+  },
+  "_notes": "可选的额外工程备注"
+}

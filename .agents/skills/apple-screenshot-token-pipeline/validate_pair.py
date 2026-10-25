@@ -201,6 +201,98 @@ def validate_single_token_schema(data: dict, expected_mode: str, filename: str) 
     return errors, warnings_list
 
 
+# ── 布局架构蓝图 Schema 结构校验 ────────────────────────────
+def validate_single_layout_schema(data: dict, filename: str) -> Tuple[List[str], List[str]]:
+    """验证 {folder}_layout.json 的结构合法性与关键约束。"""
+    errors = []
+    warnings_list = []
+    prefix = f"{filename}"
+
+    # 1. 顶层根键检查
+    required_roots = [
+        "view_identity", "wireframe_ascii", "component_tree",
+        "layout_constraints_and_rhythm", "design_intent", "code_skeletons"
+    ]
+    for k in required_roots:
+        if k not in data:
+            errors.append(f"[{prefix}] 缺少顶层关键节点: '{k}'")
+
+    if errors:
+        return errors, warnings_list
+
+    # 2. view_identity
+    vi = data.get("view_identity", {})
+    if not vi.get("app_name"):
+        errors.append(f"[{prefix}.view_identity] app_name 不能为空")
+    if not vi.get("view_name"):
+        errors.append(f"[{prefix}.view_identity] view_name 不能为空")
+    if not vi.get("archetype"):
+        errors.append(f"[{prefix}.view_identity] archetype 不能为空 (如 inset_grouped_list / bento_grid / detail_editor 等)")
+
+    device = vi.get("device", {})
+    if isinstance(device, dict):
+        check_num(device.get("scale_factor"), f"{prefix}.view_identity.device.scale_factor", errors, allow_null=True)
+
+    # 3. wireframe_ascii
+    wf = data.get("wireframe_ascii")
+    if not isinstance(wf, str) or not wf.strip():
+        errors.append(f"[{prefix}.wireframe_ascii] 必须提供非空的 ASCII 布局示意图")
+
+    # 4. component_tree
+    ct = data.get("component_tree", {})
+    if not isinstance(ct, dict):
+        errors.append(f"[{prefix}.component_tree] 必须为字典对象")
+    else:
+        if not ct.get("root"):
+            warnings_list.append(f"[{prefix}.component_tree.root] 建议标注根容器 (如 'Scaffold')")
+        sc = ct.get("scroll_container", {})
+        if isinstance(sc, dict):
+            check_num(sc.get("edge_margin_pt"), f"{prefix}.component_tree.scroll_container.edge_margin_pt", errors, allow_null=True)
+            check_num(sc.get("section_gap_pt"), f"{prefix}.component_tree.scroll_container.section_gap_pt", errors, allow_null=True)
+            sections = sc.get("sections", [])
+            if isinstance(sections, list):
+                for idx, sec in enumerate(sections):
+                    s_p = f"{prefix}.component_tree.scroll_container.sections[{idx}]"
+                    if isinstance(sec, dict):
+                        check_num(sec.get("corner_radius_pt"), f"{s_p}.corner_radius_pt", errors, allow_null=True)
+                        cp = sec.get("card_padding", {})
+                        if isinstance(cp, dict):
+                            for side in ["top_pt", "bottom_pt", "left_pt", "right_pt"]:
+                                check_num(cp.get(side), f"{s_p}.card_padding.{side}", errors, allow_null=True)
+                        sep_strat = sec.get("separator_strategy", {})
+                        if isinstance(sep_strat, dict) and sep_strat.get("exists"):
+                            check_num(sep_strat.get("inset_left_pt"), f"{s_p}.separator_strategy.inset_left_pt", errors, allow_null=True)
+
+    # 5. layout_constraints_and_rhythm
+    lcr = data.get("layout_constraints_and_rhythm", {})
+    if isinstance(lcr, dict):
+        da = lcr.get("density_and_alignment", {})
+        if isinstance(da, dict):
+            check_num(da.get("screen_margin_pt"), f"{prefix}.layout_constraints_and_rhythm.density_and_alignment.screen_margin_pt", errors, allow_null=True)
+            check_num(da.get("touch_target_min_height_pt"), f"{prefix}.layout_constraints_and_rhythm.density_and_alignment.touch_target_min_height_pt", errors, allow_null=True)
+
+    # 6. design_intent
+    di = data.get("design_intent", {})
+    if not isinstance(di, dict):
+        errors.append(f"[{prefix}.design_intent] 必须为字典对象")
+    else:
+        for k in ["visual_anchor", "information_hierarchy", "rationale_for_layout"]:
+            if not di.get(k):
+                warnings_list.append(f"[{prefix}.design_intent.{k}] 建议填写详细的设计意图解析")
+
+    # 7. code_skeletons
+    cs = data.get("code_skeletons", {})
+    if not isinstance(cs, dict):
+        errors.append(f"[{prefix}.code_skeletons] 必须为字典对象 (包含 jetpack_compose 与 swiftui)")
+    else:
+        jc = cs.get("jetpack_compose")
+        sw = cs.get("swiftui")
+        if not jc and not sw:
+            errors.append(f"[{prefix}.code_skeletons] 必须提供至少一个代码骨架 (jetpack_compose 或 swiftui)")
+
+    return errors, warnings_list
+
+
 # ── 深浅对称性校验 (Pair Consistency) ────────────────────
 def validate_pair_symmetry(light: dict, dark: dict) -> Tuple[List[str], List[str]]:
     """验证同一界面的 Light 和 Dark 在几何、间距、字体上保持像素级数学恒等。"""
@@ -375,38 +467,59 @@ def validate_single_mode(folder: Path, mode: str, verbose: bool = False) -> bool
             print(f"  {failure(err)}")
         return False
 
-    # Schema 校验
-    errs, warns = validate_single_token_schema(data, mode, target_file.name)
-    all_errors.extend(errs)
-    all_warnings.extend(warns)
+    if mode == "layout":
+        errs, warns = validate_single_layout_schema(data, target_file.name)
+        all_errors.extend(errs)
+        all_warnings.extend(warns)
 
-    # 地面真值比对 (单模)
-    if raw_path.exists():
-        try:
-            raw_data = json.loads(raw_path.read_text(encoding="utf-8"))
-            sm = data.get("script_measurements", {})
-            raw_sample_bg = raw_data.get(f"{mode}_mode_samples", {}).get("background_hex")
-            raw_metrics = raw_data.get("measured_metrics_pt", {})
-            raw_margin = raw_metrics.get("screen_horizontal_margin_pt")
-            raw_gap = raw_metrics.get("card_vertical_gap_pt")
-            raw_section_gap = raw_metrics.get("section_vertical_gap_pt")
-            raw_sep_inset = raw_metrics.get("separator_inset_left_pt")
-            raw_radius = raw_metrics.get("traditional_card_radius_pt")
+        # 尝试与已有 light.json 对照 view_identity 一致性
+        light_file = resolve_json_path(folder, "light")
+        if light_file.exists():
+            try:
+                l_data = json.loads(light_file.read_text(encoding="utf-8"))
+                l_app = l_data.get("view_identity", {}).get("app_name")
+                l_view = l_data.get("view_identity", {}).get("view_name")
+                lay_app = data.get("view_identity", {}).get("app_name")
+                lay_view = data.get("view_identity", {}).get("view_name")
+                if lay_app and l_app and lay_app != l_app:
+                    all_errors.append(f"[布局一致性] {target_file.name} app_name ('{lay_app}') 与 light.json ('{l_app}') 不一致")
+                if lay_view and l_view and lay_view != l_view:
+                    all_errors.append(f"[布局一致性] {target_file.name} view_name ('{lay_view}') 与 light.json ('{l_view}') 不一致")
+            except Exception:
+                pass
+    else:
+        # Schema 校验 (light/dark tokens)
+        errs, warns = validate_single_token_schema(data, mode, target_file.name)
+        all_errors.extend(errs)
+        all_warnings.extend(warns)
 
-            if raw_sample_bg and sm.get("background_hex_measured") != raw_sample_bg:
-                all_errors.append(f"[地面真值] {target_file.name} 中的 background_hex_measured ({sm.get('background_hex_measured')}) 与 raw ({raw_sample_bg}) 不符")
-            if raw_margin is not None and sm.get("screen_margin_pt_measured") != raw_margin:
-                all_errors.append(f"[地面真值] {target_file.name} 中的 screen_margin_pt_measured ({sm.get('screen_margin_pt_measured')}) 与 raw ({raw_margin}) 不符")
-            if raw_gap is not None and sm.get("card_gap_pt_measured") != raw_gap:
-                all_errors.append(f"[地面真值] {target_file.name} 中的 card_gap_pt_measured ({sm.get('card_gap_pt_measured')}) 与 raw ({raw_gap}) 不符")
-            if raw_section_gap is not None and sm.get("section_gap_pt_measured") != raw_section_gap:
-                all_errors.append(f"[地面真值] {target_file.name} 中的 section_gap_pt_measured ({sm.get('section_gap_pt_measured')}) 与 raw ({raw_section_gap}) 不符")
-            if raw_sep_inset is not None and sm.get("separator_inset_left_pt_measured") != raw_sep_inset:
-                all_errors.append(f"[地面真值] {target_file.name} 中的 separator_inset_left_pt_measured ({sm.get('separator_inset_left_pt_measured')}) 与 raw ({raw_sep_inset}) 不符")
-            if raw_radius is not None and sm.get("traditional_card_radius_pt_measured") != raw_radius:
-                all_errors.append(f"[地面真值] {target_file.name} 中的 traditional_card_radius_pt_measured ({sm.get('traditional_card_radius_pt_measured')}) 与 raw ({raw_radius}) 不符")
-        except Exception as e:
-            all_warnings.append(f"raw_measurements.json 比对异常: {e}")
+        # 地面真值比对 (单模)
+        if raw_path.exists():
+            try:
+                raw_data = json.loads(raw_path.read_text(encoding="utf-8"))
+                sm = data.get("script_measurements", {})
+                raw_sample_bg = raw_data.get(f"{mode}_mode_samples", {}).get("background_hex")
+                raw_metrics = raw_data.get("measured_metrics_pt", {})
+                raw_margin = raw_metrics.get("screen_horizontal_margin_pt")
+                raw_gap = raw_metrics.get("card_vertical_gap_pt")
+                raw_section_gap = raw_metrics.get("section_vertical_gap_pt")
+                raw_sep_inset = raw_metrics.get("separator_inset_left_pt")
+                raw_radius = raw_metrics.get("traditional_card_radius_pt")
+
+                if raw_sample_bg and sm.get("background_hex_measured") != raw_sample_bg:
+                    all_errors.append(f"[地面真值] {target_file.name} 中的 background_hex_measured ({sm.get('background_hex_measured')}) 与 raw ({raw_sample_bg}) 不符")
+                if raw_margin is not None and sm.get("screen_margin_pt_measured") != raw_margin:
+                    all_errors.append(f"[地面真值] {target_file.name} 中的 screen_margin_pt_measured ({sm.get('screen_margin_pt_measured')}) 与 raw ({raw_margin}) 不符")
+                if raw_gap is not None and sm.get("card_gap_pt_measured") != raw_gap:
+                    all_errors.append(f"[地面真值] {target_file.name} 中的 card_gap_pt_measured ({sm.get('card_gap_pt_measured')}) 与 raw ({raw_gap}) 不符")
+                if raw_section_gap is not None and sm.get("section_gap_pt_measured") != raw_section_gap:
+                    all_errors.append(f"[地面真值] {target_file.name} 中的 section_gap_pt_measured ({sm.get('section_gap_pt_measured')}) 与 raw ({raw_section_gap}) 不符")
+                if raw_sep_inset is not None and sm.get("separator_inset_left_pt_measured") != raw_sep_inset:
+                    all_errors.append(f"[地面真值] {target_file.name} 中的 separator_inset_left_pt_measured ({sm.get('separator_inset_left_pt_measured')}) 与 raw ({raw_sep_inset}) 不符")
+                if raw_radius is not None and sm.get("traditional_card_radius_pt_measured") != raw_radius:
+                    all_errors.append(f"[地面真值] {target_file.name} 中的 traditional_card_radius_pt_measured ({sm.get('traditional_card_radius_pt_measured')}) 与 raw ({raw_radius}) 不符")
+            except Exception as e:
+                all_warnings.append(f"raw_measurements.json 比对异常: {e}")
 
     if all_errors:
         print(f"\n  {failure(f'发现 {len(all_errors)} 项错误 ({target_file.name} 不合格):')}")
@@ -414,7 +527,7 @@ def validate_single_mode(folder: Path, mode: str, verbose: bool = False) -> bool
             print(f"    • {Colors.RED}{err}{Colors.RESET}")
     else:
         print(f"  {success(f'{target_file.name} Schema 结构与字段类型纪律通过')}")
-        if raw_path.exists():
+        if mode != "layout" and raw_path.exists():
             print(f"  {success('物理测量地面真值比对一致通过')}")
 
     if all_warnings:
@@ -426,6 +539,10 @@ def validate_single_mode(folder: Path, mode: str, verbose: bool = False) -> bool
     if is_valid:
         if mode == "light":
             print(f"\n{Colors.GREEN}{Colors.BOLD}🎉 阶段一成功！{target_file.name} 校验合格并确立几何骨架。接下来请继续分析深色模式。{Colors.RESET}\n")
+        elif mode == "dark":
+            print(f"\n{Colors.GREEN}{Colors.BOLD}🎉 阶段二成功！{target_file.name} 校验合格。接下来请继续提取布局架构蓝图。{Colors.RESET}\n")
+        elif mode == "layout":
+            print(f"\n{Colors.GREEN}{Colors.BOLD}🎉 阶段三成功！{target_file.name} 布局架构蓝图校验合格！{Colors.RESET}\n")
         else:
             print(f"\n{Colors.GREEN}{Colors.BOLD}🎉 {target_file.name} 校验合格！{Colors.RESET}\n")
     else:
@@ -500,6 +617,27 @@ def validate_directory(folder: Path, verbose: bool = False) -> bool:
     else:
         all_warnings.append("未发现 raw_measurements.json，跳过地面真值比对")
 
+    # 6. 布局架构蓝图校验 (若存在 {folder.name}_layout.json 则严格校验；若不存在则提示跳过，保持向前兼容)
+    layout_path = resolve_json_path(folder, "layout")
+    if layout_path.exists():
+        try:
+            layout_data = json.loads(layout_path.read_text(encoding="utf-8"))
+            lay_errs, lay_warns = validate_single_layout_schema(layout_data, layout_path.name)
+            all_errors.extend(lay_errs)
+            all_warnings.extend(lay_warns)
+
+            # 跨文件一致性检查
+            l_app = light_data.get("view_identity", {}).get("app_name")
+            l_view = light_data.get("view_identity", {}).get("view_name")
+            lay_app = layout_data.get("view_identity", {}).get("app_name")
+            lay_view = layout_data.get("view_identity", {}).get("view_name")
+            if lay_app and l_app and lay_app != l_app:
+                all_errors.append(f"[布局一致性] {layout_path.name} app_name ('{lay_app}') 与 light.json ('{l_app}') 不一致")
+            if lay_view and l_view and lay_view != l_view:
+                all_errors.append(f"[布局一致性] {layout_path.name} view_name ('{lay_view}') 与 light.json ('{l_view}') 不一致")
+        except Exception as e:
+            all_errors.append(f"{layout_path.name} JSON 解析失败: {e}")
+
     # ── 结果输出 ─────────────────────────────────────────
     if all_errors:
         print(f"\n  {failure(f'发现 {len(all_errors)} 项错误 (校验不合格):')}")
@@ -510,6 +648,10 @@ def validate_directory(folder: Path, verbose: bool = False) -> bool:
         print(f"  {success('深浅模式几何/间距/排版对称恒等通过')}")
         if raw_path.exists():
             print(f"  {success('物理测量地面真值比对一致通过')}")
+        if layout_path.exists():
+            print(f"  {success(f'{layout_path.name} 布局架构蓝图校验通过')}")
+        else:
+            all_warnings.append(f"未检测到 {layout_path.name} (可选布局蓝图)，跳过布局架构校验")
 
     if all_warnings:
         print(f"\n  {warning(f'提示信息 ({len(all_warnings)} 项):')}")
@@ -538,9 +680,9 @@ def main():
     )
     parser.add_argument(
         "--mode",
-        choices=["pair", "light", "dark"],
+        choices=["pair", "light", "dark", "layout"],
         default="pair",
-        help="校验模式: 'light' (仅校核浅色阶段), 'dark' (仅校核深色), 'pair' (默认，完整双模配对校验)",
+        help="校验模式: 'light' (仅校核浅色阶段), 'dark' (仅校核深色), 'layout' (仅校核布局蓝图), 'pair' (默认，完整双模配对校验)",
     )
     parser.add_argument(
         "--all",
@@ -585,7 +727,7 @@ def main():
         print(failure(f"指定的目录不存在: {args.folder}"))
         sys.exit(1)
 
-    if args.mode in ["light", "dark"]:
+    if args.mode in ["light", "dark", "layout"]:
         ok = validate_single_mode(target_folder, args.mode, verbose=args.verbose)
     else:
         ok = validate_directory(target_folder, verbose=args.verbose)
